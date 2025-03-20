@@ -3,8 +3,6 @@ import time
 from datetime import datetime, timezone, timedelta
 import telegram
 import asyncio
-import os
-from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -12,18 +10,19 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from dotenv import load_dotenv
+import os
 
+# Ladda in hemliga variabler från .env
 load_dotenv()
-
-# Hämta värden från .env
-telegram_token = os.getenv("TELEGRAM_TOKEN")
-chat_id = os.getenv("CHAT_ID")
-username = os.getenv("USERNAME")
-password = os.getenv("PASSWORD")
 
 # Konfigurerbara variabler
 organization_id = "2711"
 event_keyword = "sunset"
+telegram_token = os.getenv("TELEGRAM_TOKEN")
+chat_id = os.getenv("CHAT_ID")
+username = os.getenv("USERNAME")
+password = os.getenv("PASSWORD")
 
 # URL till API:et
 api_url = f"https://api.studentkortet.se/organization/{organization_id}/organization-events"
@@ -100,9 +99,6 @@ def select_tickets(link, ticket_count=2):
     driver.get(link)
 
     try:
-        # Vänta tills sidan laddats klart
-        WebDriverWait(driver, 15).until(lambda d: d.execute_script("return document.readyState") == "complete")
-
         # Scrolla ner för att se till att knappen syns
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
@@ -123,6 +119,24 @@ def select_tickets(link, ticket_count=2):
         )
         next_button.click()
         print("Klickade på 'Next'!")
+
+        # Logga in på Stuk efter 'Next'
+        username_field = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "pin"))
+        )
+        username_field.send_keys(username)
+        driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }))", username_field)
+
+        password_field = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "password")))
+        password_field.send_keys(password)
+        driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }))", password_field)
+
+        # Vänta tills 'Sign In' aktiveras och klicka
+        sign_in_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Sign In') and not(@disabled)]"))
+        )
+        sign_in_button.click()
+        print("Inloggad på Stuk!")
 
     except Exception as e:
         print(f"Kunde inte välja biljetter: {e}")

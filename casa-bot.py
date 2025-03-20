@@ -3,6 +3,8 @@ import time
 from datetime import datetime, timezone, timedelta
 import telegram
 import asyncio
+import os
+from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -11,11 +13,17 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+load_dotenv()
+
+# Hämta värden från .env
+telegram_token = os.getenv("TELEGRAM_TOKEN")
+chat_id = os.getenv("CHAT_ID")
+username = os.getenv("USERNAME")
+password = os.getenv("PASSWORD")
+
 # Konfigurerbara variabler
 organization_id = "2711"
 event_keyword = "sunset"
-telegram_token = "7874221678:AAEWDMOKfs34tS9oNMU3nFGLweyp9qFUg0U"
-chat_id = "1586312797"
 
 # URL till API:et
 api_url = f"https://api.studentkortet.se/organization/{organization_id}/organization-events"

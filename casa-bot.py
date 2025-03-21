@@ -18,7 +18,7 @@ load_dotenv()
 
 # Konfigurerbara variabler
 organization_id = "2698"
-event_keyword = "casanova"
+event_keyword = "casa"
 telegram_token = os.getenv("TELEGRAM_TOKEN")
 chat_id = os.getenv("CHAT_ID")
 username = os.getenv("USERNAME")
@@ -133,7 +133,7 @@ def select_tickets(link, ticket_count=2):
         sign_in_button.click()
         print("Inloggad på Stuk!")
 
-        time.sleep(6)
+        time.sleep(7)
 
         iframe = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.ID, "nets-checkout-iframe"))
@@ -180,8 +180,11 @@ def select_tickets(link, ticket_count=2):
         )
 
         #Fill in the card details
+        time.sleep(0.2)
         card_number_field.send_keys(card_number)
+        time.sleep(0.2)
         card_expiry_field.send_keys(card_expiry)
+        time.sleep(0.2)
         card_cvc_field.send_keys(card_cvc)
         print("Kortnummer ifyllt!")
 

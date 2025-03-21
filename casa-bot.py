@@ -17,12 +17,15 @@ import os
 load_dotenv()
 
 # Konfigurerbara variabler
-organization_id = "2711"
-event_keyword = "sunset"
+organization_id = "2698"
+event_keyword = "casanova"
 telegram_token = os.getenv("TELEGRAM_TOKEN")
 chat_id = os.getenv("CHAT_ID")
 username = os.getenv("USERNAME")
 password = os.getenv("PASSWORD")
+card_number = os.getenv("CARD_NUMBER")
+card_expiry = os.getenv("CARD_EXPIRY")
+card_cvc = os.getenv("CARD_CVC")
 
 # URL till API:et
 api_url = f"https://api.studentkortet.se/organization/{organization_id}/organization-events"
@@ -41,7 +44,6 @@ def find_event():
 
         latest_event = None
 
-        # Gå igenom eventen från början till slut och spara det senaste eventet som matchar nyckelordet
         if isinstance(data, list):
             events = data
         elif isinstance(data, dict) and 'data' in data:
@@ -74,7 +76,6 @@ def find_event():
             print(f"Länk till eventet: {event_link}")
             print(f"Biljetter slutsålda: {'Ja' if sold_out else 'Nej'}")
 
-            # Skicka Telegram-notis endast om biljetterna inte är slutsålda
             if not sold_out:
                 send_telegram_message(f"🎟️ {event_keyword.capitalize()}-eventet hittades! Biljetter är tillgängliga. Länk: {event_link}")
 
@@ -99,10 +100,8 @@ def select_tickets(link, ticket_count=2):
     driver.get(link)
 
     try:
-        # Scrolla ner för att se till att knappen syns
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
-        # Välj biljetter
         plus_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.ID, "plus-button"))
         )
@@ -113,46 +112,104 @@ def select_tickets(link, ticket_count=2):
 
         print("Två biljetter valda!")
 
-        # Klicka på 'Next'-knappen
         next_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Next') and not(@disabled)]"))
         )
         next_button.click()
         print("Klickade på 'Next'!")
 
-        # Logga in på Stuk efter 'Next'
+        # Logga in
         username_field = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.ID, "pin"))
         )
         username_field.send_keys(username)
-        driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }))", username_field)
 
         password_field = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "password")))
         password_field.send_keys(password)
-        driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }))", password_field)
 
-        # Vänta tills 'Sign In' aktiveras och klicka
         sign_in_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Sign In') and not(@disabled)]"))
         )
         sign_in_button.click()
         print("Inloggad på Stuk!")
 
+        time.sleep(6)
+
+        iframe = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "nets-checkout-iframe"))
+        )
+        print("Iframe hittad!")
+
+        iframe = driver.find_element(By.TAG_NAME, "iframe")
+        driver.switch_to.frame(iframe)
+        print("Bytt till iframen!")
+
+        button = driver.find_element(By.ID, "cardSelectButton")
+
+        # Scroll the button into view
+        driver.execute_script("arguments[0].scrollIntoView(true);", button)
+        time.sleep(1)
+
+        checkbox = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.ID, "consentOnMerchantTerms"))
+        )
+
+        # Click the checkbox
+        checkbox.click()
+        print("Checkbox klickad!")
+
+        button.click()
+        print("Klickade på knappen!")
+
+        time.sleep(1)
+
+        # Now switch to the inner iframe (`easy-checkout-iframe`)
+        easy_checkout_iframe = driver.find_element(By.ID, "easy-checkout-iframe")
+        driver.switch_to.frame(easy_checkout_iframe)
+        print("Bytt till andra iframen (easy-checkout-iframe)!")
+
+        # Hitta kortnummerfältet och använd JavaScript för att klicka på det
+        card_number_field = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "cardNumberInput"))
+        )
+        card_expiry_field = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "cardExpiryInput"))
+        )
+        card_cvc_field = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "cardCvcInput"))
+        )
+
+        #Fill in the card details
+        card_number_field.send_keys(card_number)
+        card_expiry_field.send_keys(card_expiry)
+        card_cvc_field.send_keys(card_cvc)
+        print("Kortnummer ifyllt!")
+
+        # Now, switch back to the outer iframe (nets-checkout-iframe) before clicking the Pay button
+        driver.switch_to.default_content()  # Switch back to the main document
+        iframe = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, "nets-checkout-iframe"))
+        )
+        driver.switch_to.frame(iframe)  # Switch back to the outer iframe
+        print("Bytt tillbaka till nets-checkout iframen!")
+
+        # Find and click the Pay button
+        pay_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.ID, "btnPay"))
+        )
+        pay_button.click()
+        print("Klickade på 'Pay' knappen!")
+
+
     except Exception as e:
-        print(f"Kunde inte välja biljetter: {e}")
-        with open("error_page.html", "w", encoding="utf-8") as file:
-            file.write(driver.page_source)
-        print("Sidans HTML sparad som 'error_page.html'.")
+        print(f"Kunde inte genomföra biljettval: {e}")
 
     finally:
-        time.sleep(10)
-        driver.quit()
+        time.sleep(120)
 
-# Loop som kollar varje 30:e sekund
 while True:
     link = find_event()
     if link:
         print("Klar!")
         select_tickets(link, ticket_count=2)
-        break
     time.sleep(30)

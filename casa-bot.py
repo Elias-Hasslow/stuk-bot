@@ -1,3 +1,4 @@
+import threading
 import requests
 import time
 from datetime import datetime, timezone, timedelta
@@ -34,6 +35,18 @@ api_url = f"https://api.studentkortet.se/organization/{organization_id}/organiza
 def send_telegram_message(message):
     bot = telegram.Bot(token=telegram_token)
     asyncio.run(bot.send_message(chat_id=chat_id, text=message))
+
+# Heartbeat-funktion som skickar ett meddelande varje timme
+def heartbeat():
+    while True:
+        current_time = datetime.now().strftime("%H:%M")
+        current_date = datetime.now().strftime("%Y-%m-%d")
+        send_telegram_message(f"bot still running, time: {current_time}, date: {current_date}")
+        time.sleep(3600)  # Vänta i en timme
+
+# Starta heartbeat-tråden som en daemon så den körs i bakgrunden
+heartbeat_thread = threading.Thread(target=heartbeat, daemon=True)
+heartbeat_thread.start()
 
 # Funktion för att hämta event-id, occur-id och biljettsstatus
 def find_event():

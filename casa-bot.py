@@ -102,7 +102,7 @@ def find_event():
         return None
 
 # Funktion för att välja antal biljetter med Selenium
-def select_tickets(link, ticket_count=2):
+def select_tickets(link, ticket_count):
     options = webdriver.ChromeOptions()
     options.binary_location = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
     options.add_argument("--enable-javascript")
@@ -193,13 +193,24 @@ def select_tickets(link, ticket_count=2):
         )
 
         #Fill in the card details
-        time.sleep(0.2)
+        #time.sleep(0.2)
         card_number_field.send_keys(card_number)
-        time.sleep(0.2)
+        #time.sleep(0.2)
         card_expiry_field.send_keys(card_expiry)
-        time.sleep(0.2)
+        #time.sleep(0.2)
         card_cvc_field.send_keys(card_cvc)
         print("Kortnummer ifyllt!")
+
+        field_classes = card_number_field.get_attribute("class")
+
+        if "has-error" in field_classes:
+            print("Fel: Kortnummerfältet visar valideringsfel! Försöker rätta till det genom att ta bort sista siffran och lägga till den igen.")
+            # Ta bort sista siffran
+            card_number_field.send_keys(Keys.BACKSPACE)
+            time.sleep(0.2)
+            # Hämta sista siffran från variabeln card_number och skicka in den igen
+            last_digit = card_number[-1]
+            card_number_field.send_keys(last_digit)
 
         # Now, switch back to the outer iframe (nets-checkout-iframe) before clicking the Pay button
         driver.switch_to.default_content()  # Switch back to the main document
@@ -213,8 +224,14 @@ def select_tickets(link, ticket_count=2):
         pay_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.ID, "btnPay"))
         )
-        pay_button.click()
-        print("Klickade på 'Pay' knappen!")
+        try:
+            pay_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.ID, "btnPay"))
+            )
+            pay_button.click()
+            print("Success: 'Pay' button clicked!")
+        except Exception as e:
+            print(f"Error: Could not click the 'Pay' button. Details: {e}")
 
 
     except Exception as e:
@@ -227,5 +244,5 @@ while True:
     link = find_event()
     if link:
         print("Klar!")
-        select_tickets(link, ticket_count=2)
+        select_tickets(link, ticket_count=3)
     time.sleep(30)

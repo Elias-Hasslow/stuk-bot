@@ -1,0 +1,1 @@
+A python bot used to buy tickets for nations in Lund. The bot uses api to detect when tickets are available and selenium in order to purchase the tickets. Written for mac but can easily be modified to work in a linux command line enviroment to be able to work on a remote Azure or AWS instance.

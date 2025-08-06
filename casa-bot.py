@@ -245,4 +245,4 @@ while True:
     if link:
         print("Klar!")
         select_tickets(link, ticket_count=3)
-    time.sleep(30)
+    time.sleep(2)

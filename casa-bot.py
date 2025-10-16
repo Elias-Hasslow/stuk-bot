@@ -119,17 +119,28 @@ def select_tickets(link, ticket_count):
             EC.element_to_be_clickable((By.ID, "plus-button"))
         )
 
-        for _ in range(ticket_count):
-            plus_button.click()
-            time.sleep(0.5)
-
-        print("Två biljetter valda!")
+        for i in range(ticket_count):
+            retries = 0
+            max_retries = 20
+            prev_value = int(driver.find_element(By.XPATH, '//*[@id="selection-value"]').text)
+            while retries < max_retries:
+                plus_button.click()
+                time.sleep(0.5)
+                selection_value = int(driver.find_element(By.XPATH, '//*[@id="selection-value"]').text)
+                print(f"Tickets selected after click: {selection_value}")
+                if selection_value > prev_value:
+                    print(f"Ticket {i+1} successfully added.")
+                    break
+                else:
+                    print(f"Ticket count did not increase, retrying... ({retries+1}/{max_retries})")
+                    retries += 1
+            if retries == max_retries:
+                print(f"Failed to add ticket {i+1} after {max_retries} retries.")
 
         next_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Next') and not(@disabled)]"))
         )
         next_button.click()
-        print("Klickade på 'Next'!")
 
         # Logga in
         username_field = WebDriverWait(driver, 10).until(
@@ -245,4 +256,4 @@ while True:
     if link:
         print("Klar!")
         select_tickets(link, ticket_count=3)
-    time.sleep(2)
+    time.sleep(5)
